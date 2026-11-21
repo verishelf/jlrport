@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0c0c0c;
+  --foreground: #f5f5f5;
+  --card: #161616;
+  --card-hover: #1e1e1e;
+  --border: #2a2a2a;
+  --accent: #00a86b; /* Land Rover / Jaguar green accent */
+  --accent-dim: #008f5b;
+  --high: #ef4444;
+  --normal: #f59e0b;
+  --low: #6b7280;
+  --muted: #a1a1aa;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-high: var(--high);
+  --color-normal: var(--normal);
+  --color-low: var(--low);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Large touch targets for outdoor / gloved use */
+.btn-primary {
+  @apply min-h-14 rounded-2xl bg-accent px-6 text-lg font-semibold text-black active:scale-[0.98] transition-transform;
+}
+
+.btn-secondary {
+  @apply min-h-14 rounded-2xl border border-border bg-card px-6 text-lg font-medium text-foreground active:scale-[0.98] transition-transform;
+}
+
+.btn-danger {
+  @apply min-h-12 rounded-xl border border-red-900/50 bg-red-950/40 px-4 text-base font-medium text-red-400;
+}
