@@ -1,60 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActiveTask } from "@/components/ActiveTask";
 import { CarCard } from "@/components/CarCard";
 import { Header } from "@/components/Header";
 import { NotificationBanner } from "@/components/NotificationBanner";
-import { Car, initialCars, PORTER_NAME, WashStatus } from "@/lib/mock-data";
-
-type Tab = "active" | "needs" | "progress" | "complete";
-
-const STATUS_ORDER: WashStatus[] = [
-  "PRIORITY WASH",
-  "NEEDS WASH",
-  "Wash In Progress",
-  "WASH COMPLETE",
-];
+import { Car, initialCars, PORTER_NAME } from "@/lib/mock-data";
 
 export default function PorterDashboard() {
   const [cars, setCars] = useState<Car[]>(initialCars);
   const [activeId, setActiveId] = useState<string | null>(
-    initialCars.find((c) => c.status === "PRIORITY WASH")?.id ?? null
+    initialCars.find((c) => c.status === "assigned")?.id ?? null
   );
   const [isWorking, setIsWorking] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [incomingCar, setIncomingCar] = useState<Car | null>(null);
-  const [tab, setTab] = useState<Tab>("active");
+  const [tab, setTab] = useState<"active" | "queue">("active");
 
   const activeCar = cars.find((c) => c.id === activeId) ?? null;
-
-  const counts = useMemo(() => {
-    return {
-      needs: cars.filter(
-        (c) => c.status === "NEEDS WASH" || c.status === "PRIORITY WASH"
-      ).length,
-      progress: cars.filter((c) => c.status === "Wash In Progress").length,
-      complete: cars.filter((c) => c.status === "WASH COMPLETE").length,
-    };
-  }, [cars]);
-
-  const filteredQueue = useMemo(() => {
-    let list: Car[] = [];
-    if (tab === "needs") {
-      list = cars.filter(
-        (c) => c.status === "NEEDS WASH" || c.status === "PRIORITY WASH"
-      );
-    } else if (tab === "progress") {
-      list = cars.filter((c) => c.status === "Wash In Progress");
-    } else if (tab === "complete") {
-      list = cars.filter((c) => c.status === "WASH COMPLETE");
-    }
-    return list.sort(
-      (a, b) =>
-        STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
-    );
-  }, [cars, tab]);
+  const queue = cars.filter(
+    (c) => c.status === "queued" || (c.status === "assigned" && c.id !== activeId)
+  );
 
   useEffect(() => {
     if (!isWorking) return;
@@ -66,16 +33,16 @@ export default function PorterDashboard() {
     const timer = setTimeout(() => {
       const newCar: Car = {
         id: "demo-new",
-        tag: "TG401",
+        stockNumber: "LR26099",
         year: 2026,
         make: "Land Rover",
-        model: "Range Rover Sport",
-        trim: "Dynamic SE",
-        color: "Santorini Black",
-        colorHex: "#1a1a1a",
+        model: "Range Rover",
+        trim: "SE",
+        color: "Hakuba Silver",
+        colorHex: "#c0c0c0",
         location: "Front Line 1",
-        status: "PRIORITY WASH",
-        labels: ["Has Loaner"],
+        priority: "high",
+        status: "queued",
         notes: "Walk-in customer waiting — priority detail",
         timeInQueue: "0 min",
         keyTag: "K-300",
@@ -94,13 +61,7 @@ export default function PorterDashboard() {
     setElapsed(0);
     setCars((prev) =>
       prev.map((c) =>
-        c.id === activeId
-          ? {
-              ...c,
-              status: "Wash In Progress" as const,
-              assignedTo: PORTER_NAME,
-            }
-          : c
+        c.id === activeId ? { ...c, status: "in_progress" as const } : c
       )
     );
   }, [activeId]);
@@ -109,15 +70,13 @@ export default function PorterDashboard() {
     if (!activeId) return;
     setCars((prev) =>
       prev.map((c) =>
-        c.id === activeId
-          ? { ...c, status: "WASH COMPLETE" as const, timeInQueue: "—" }
-          : c
+        c.id === activeId ? { ...c, status: "completed" as const } : c
       )
     );
     setIsWorking(false);
     setElapsed(0);
     setActiveId(null);
-    setTab("complete");
+    setTab("queue");
   }, [activeId]);
 
   const handleCantFind = useCallback(() => {
@@ -129,7 +88,9 @@ export default function PorterDashboard() {
     setActiveId(incomingCar.id);
     setCars((prev) =>
       prev.map((c) =>
-        c.id === incomingCar.id ? { ...c, assignedTo: PORTER_NAME } : c
+        c.id === incomingCar.id
+          ? { ...c, status: "assigned" as const, assignedTo: PORTER_NAME }
+          : c
       )
     );
     setShowNotification(false);
@@ -140,18 +101,6 @@ export default function PorterDashboard() {
 
   const dismissNotification = () => {
     setShowNotification(false);
-  };
-
-  const selectCar = (c: Car) => {
-    if (
-      c.status === "NEEDS WASH" ||
-      c.status === "PRIORITY WASH" ||
-      c.status === "Wash In Progress"
-    ) {
-      setActiveId(c.id);
-      setIsWorking(c.status === "Wash In Progress");
-      setTab("active");
-    }
   };
 
   return (
@@ -166,29 +115,30 @@ export default function PorterDashboard() {
         />
       )}
 
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-28 pt-3">
-        <div className="mb-3 grid grid-cols-4 gap-1 rounded-xl border border-border bg-card p-1">
-          {(
-            [
-              { id: "active", label: "Active" },
-              { id: "needs", label: `Needs (${counts.needs})` },
-              { id: "progress", label: `In Prog (${counts.progress})` },
-              { id: "complete", label: `Done (${counts.complete})` },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`rounded-lg py-2 text-[11px] font-semibold transition-colors ${
-                tab === t.id
-                  ? "bg-accent text-black"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-24 pt-4">
+        <div className="mb-4 flex rounded-2xl border border-border bg-card p-1">
+          <button
+            type="button"
+            onClick={() => setTab("active")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+              tab === "active"
+                ? "bg-accent text-black"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Active Task
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("queue")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+              tab === "queue"
+                ? "bg-accent text-black"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Queue ({queue.length})
+          </button>
         </div>
 
         {tab === "active" && (
@@ -202,19 +152,39 @@ export default function PorterDashboard() {
           />
         )}
 
-        {tab !== "active" && (
-          <div className="space-y-2.5">
-            {filteredQueue.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted text-sm">
-                No vehicles in this status
+        {tab === "queue" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">
+              Upcoming vehicles sorted by priority
+            </p>
+            {queue.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center text-muted">
+                Queue is empty
               </div>
             ) : (
-              filteredQueue.map((car) => (
+              queue.map((car) => (
                 <CarCard
                   key={car.id}
                   car={car}
                   isActive={car.id === activeId}
-                  onSelect={selectCar}
+                  onSelect={(c) => {
+                    if (c.status === "queued") {
+                      setActiveId(c.id);
+                      setCars((prev) =>
+                        prev.map((x) =>
+                          x.id === c.id
+                            ? {
+                                ...x,
+                                status: "assigned",
+                                assignedTo: PORTER_NAME,
+                              }
+                            : x
+                        )
+                      );
+                      setIsWorking(false);
+                      setTab("active");
+                    }
+                  }}
                 />
               ))
             )}
@@ -222,8 +192,8 @@ export default function PorterDashboard() {
         )}
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 border-t border-border bg-background/95 px-4 py-2.5 text-center text-[11px] text-muted backdrop-blur">
-        Jaguar Land Rover Carlsbad · Wash / Detail Queue
+      <footer className="fixed bottom-0 inset-x-0 border-t border-border bg-background/95 px-4 py-3 text-center text-xs text-muted backdrop-blur">
+        Hoehn Jaguar Land Rover Carlsbad · Porter Live Queue
       </footer>
     </div>
   );
