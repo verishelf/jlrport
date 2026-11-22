@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Car, initialCars, PORTER_NAME, WashStatus, rowStyle } from "@/lib/mock-data";
+import { Car, initialCars, PORTER_NAME, WashStatus } from "@/lib/mock-data";
 
 const STATUS_ORDER: WashStatus[] = [
   "PRIORITY WASH",
@@ -9,6 +9,34 @@ const STATUS_ORDER: WashStatus[] = [
   "Wash In Progress",
   "WASH COMPLETE",
 ];
+
+function statusFieldClass(status: WashStatus): string {
+  switch (status) {
+    case "PRIORITY WASH":
+    case "NEEDS WASH":
+      return "bg-white text-[#1a1a1a] border border-[#ccc]";
+    case "Wash In Progress":
+      return "bg-white text-[#1a1a1a] border border-[#ccc]";
+    case "WASH COMPLETE":
+      return "bg-white text-[#1a1a1a] border border-[#ccc]";
+    default:
+      return "bg-white text-[#1a1a1a] border border-[#ccc]";
+  }
+}
+
+function rowBg(status: WashStatus): string {
+  switch (status) {
+    case "PRIORITY WASH":
+    case "NEEDS WASH":
+      return "bg-[#e85a5a]";
+    case "Wash In Progress":
+      return "bg-[#f0d060]";
+    case "WASH COMPLETE":
+      return "bg-[#e8e8e8]";
+    default:
+      return "bg-white";
+  }
+}
 
 export default function WashQueue() {
   const [cars, setCars] = useState<Car[]>(initialCars);
@@ -46,7 +74,7 @@ export default function WashQueue() {
       setCars((prev) => [newCar, ...prev]);
       setToastCar(newCar);
       setShowToast(true);
-    }, 10000);
+    }, 12000);
     return () => clearTimeout(t);
   }, []);
 
@@ -55,157 +83,139 @@ export default function WashQueue() {
       prev.map((c) => {
         if (c.id !== id) return c;
         const next = { ...c, status };
-        if (status === "Wash In Progress") {
-          next.assignedTo = PORTER_NAME;
-        }
-        if (status === "WASH COMPLETE") {
-          next.timeInQueue = "—";
-        }
+        if (status === "Wash In Progress") next.assignedTo = PORTER_NAME;
+        if (status === "WASH COMPLETE") next.timeInQueue = "—";
         return next;
       })
     );
   }, []);
 
-  const startWash = useCallback(
-    (id: string) => {
-      updateStatus(id, "Wash In Progress");
-      setSelectedId(id);
-    },
-    [updateStatus]
-  );
-
-  const completeWash = useCallback(
-    (id: string) => {
-      updateStatus(id, "WASH COMPLETE");
-      setSelectedId(null);
-    },
-    [updateStatus]
-  );
-
   return (
-    <div className="flex min-h-full flex-col bg-[#f0f1f3]">
-      <header className="sticky top-0 z-20 border-b border-[#c8ccd2] bg-white">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
-          <div>
-            <h1 className="text-[15px] font-semibold text-[#1a1a1a] leading-tight">
-              Jaguar Land Rover Carlsbad
-            </h1>
-            <p className="text-[11px] text-[#6b7280]">
-              Wash / Detail · {PORTER_NAME}
-            </p>
+    <div className="flex min-h-full flex-col bg-[#dfe3e8]">
+      <header className="bg-[#2c3e50] text-white">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Jaguar Land Rover Carlsbad</span>
+            <span className="text-[10px] text-white/60">▾</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-[11px] text-[#6b7280]">Live</span>
-          </div>
+          <span className="text-[11px] text-white/70">{PORTER_NAME}</span>
         </div>
       </header>
 
+      <div className="border-b border-[#c0c4ca] bg-[#eef1f5]">
+        <div className="mx-auto flex max-w-3xl gap-0 overflow-x-auto px-1">
+          {["Messages", "Appointments", "Payments", "Inspect", "Video"].map(
+            (tab) => (
+              <button
+                key={tab}
+                type="button"
+                className={`shrink-0 px-3 py-2.5 text-[13px] font-medium ${
+                  tab === "Inspect"
+                    ? "border-b-2 border-[#0d6efd] text-[#0d6efd]"
+                    : "text-[#5a6270]"
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
+        </div>
+      </div>
+
+      <div className="border-b border-[#c0c4ca] bg-white">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-semibold text-[#1a1a1a]">
+              Joint Inspection
+            </span>
+            <span className="rounded bg-[#0d6efd] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              Live
+            </span>
+          </div>
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded bg-[#2c3e50] px-3 py-1.5 text-[12px] font-semibold text-white"
+          >
+            <span className="text-base leading-none">+</span> CREATE
+          </button>
+        </div>
+        <div className="mx-auto max-w-3xl px-3 pb-2">
+          <input
+            type="search"
+            placeholder="Search by RO#, VIN, TAG, Customer Name, Stock#"
+            className="w-full rounded border border-[#c0c4ca] bg-white px-3 py-1.5 text-[13px] text-[#1a1a1a] placeholder:text-[#9ca3af] outline-none focus:border-[#0d6efd]"
+          />
+        </div>
+      </div>
+
       {showToast && toastCar && (
-        <div className="fixed inset-x-0 top-12 z-50 mx-auto max-w-2xl px-3">
-          <div className="rounded-md border border-red-300 bg-white p-3 shadow-lg">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-red-600">
-                  New Priority Wash
-                </p>
-                <p className="text-xs text-[#6b7280]">
-                  {toastCar.tag} · {toastCar.year} {toastCar.model}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(toastCar.id);
-                    setShowToast(false);
-                  }}
-                  className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
-                >
-                  Accept
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowToast(false)}
-                  className="rounded border border-[#c8ccd2] px-3 py-1.5 text-xs font-medium text-[#6b7280]"
-                >
-                  Dismiss
-                </button>
-              </div>
+        <div className="fixed inset-x-0 top-28 z-50 mx-auto max-w-3xl px-3">
+          <div className="flex items-center justify-between gap-3 rounded border border-red-400 bg-white p-3 shadow-lg">
+            <div>
+              <p className="text-sm font-semibold text-red-600">
+                New Priority Wash
+              </p>
+              <p className="text-xs text-[#6b7280]">
+                {toastCar.tag} · {toastCar.year} {toastCar.model}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedId(toastCar.id);
+                  setShowToast(false);
+                }}
+                className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowToast(false)}
+                className="rounded border border-[#c0c4ca] px-3 py-1.5 text-xs font-medium text-[#6b7280]"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-0 pb-20 pt-0">
+      <main className="mx-auto w-full max-w-3xl flex-1 pb-16">
         {selected && (
-          <div className="mx-3 mt-3 mb-2 rounded-md border border-[#c8ccd2] bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded px-2 py-0.5 text-[11px] font-bold uppercase ${rowStyle(
-                      selected.status
-                    )}`}
-                  >
-                    {selected.status}
-                  </span>
-                  <span className="font-mono text-sm font-bold">
-                    {selected.tag}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[15px] font-semibold truncate">
-                  {selected.year} {selected.model}
+          <div className="m-3 rounded border border-[#c0c4ca] bg-white p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-mono text-sm font-bold">{selected.tag}</p>
+                <p className="text-[15px] font-semibold">
+                  {selected.year} {selected.model} {selected.trim}
                 </p>
                 <p className="text-xs text-[#6b7280]">
-                  {selected.trim} · {selected.color}
+                  {selected.color} · {selected.location}
+                  {selected.keyTag ? ` · Key ${selected.keyTag}` : ""}
                 </p>
               </div>
-              <div
-                className="h-11 w-11 shrink-0 rounded border border-[#c8ccd2]"
-                style={{ backgroundColor: selected.colorHex }}
-              />
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                className="text-[#6b7280] text-lg leading-none px-1"
+              >
+                ×
+              </button>
             </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded bg-[#f4f5f7] px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-[#6b7280]">
-                  Location
-                </p>
-                <p className="font-semibold">{selected.location}</p>
-              </div>
-              <div className="rounded bg-[#f4f5f7] px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wide text-[#6b7280]">
-                  Key Tag
-                </p>
-                <p className="font-semibold">{selected.keyTag ?? "—"}</p>
-              </div>
-            </div>
-
-            {selected.labels.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {selected.labels.map((l) => (
-                  <span
-                    key={l}
-                    className="rounded bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white"
-                  >
-                    {l}
-                  </span>
-                ))}
-              </div>
-            )}
-
             {selected.notes && (
-              <p className="mt-2 text-sm text-[#6b7280]">{selected.notes}</p>
+              <p className="mt-2 text-xs text-[#6b7280]">{selected.notes}</p>
             )}
-
             <div className="mt-3 flex gap-2">
               {(selected.status === "NEEDS WASH" ||
                 selected.status === "PRIORITY WASH") && (
                 <button
                   type="button"
-                  onClick={() => startWash(selected.id)}
-                  className="flex-1 rounded bg-[#0d6efd] py-2.5 text-sm font-semibold text-white"
+                  onClick={() => {
+                    updateStatus(selected.id, "Wash In Progress");
+                  }}
+                  className="flex-1 rounded bg-[#0d6efd] py-2 text-sm font-semibold text-white"
                 >
                   Start Wash
                 </button>
@@ -213,135 +223,95 @@ export default function WashQueue() {
               {selected.status === "Wash In Progress" && (
                 <button
                   type="button"
-                  onClick={() => completeWash(selected.id)}
-                  className="flex-1 rounded bg-emerald-600 py-2.5 text-sm font-semibold text-white"
+                  onClick={() => {
+                    updateStatus(selected.id, "WASH COMPLETE");
+                    setSelectedId(null);
+                  }}
+                  className="flex-1 rounded bg-emerald-600 py-2 text-sm font-semibold text-white"
                 >
                   Mark Complete
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setSelectedId(null)}
-                className="rounded border border-[#c8ccd2] px-4 py-2.5 text-sm font-medium text-[#6b7280]"
-              >
-                Close
-              </button>
             </div>
           </div>
         )}
 
-        <div className="overflow-hidden border-y border-[#c8ccd2] bg-white sm:mx-3 sm:mt-3 sm:rounded-md sm:border">
-          <div className="grid grid-cols-[minmax(0,1.4fr)_64px_minmax(0,1fr)] gap-1 border-b border-[#c8ccd2] bg-[#eef0f3] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[#5a6270]">
-            <span>Inspection Status</span>
-            <span>Tag#</span>
-            <span>Labels</span>
+        <div className="overflow-x-auto bg-white">
+          <div className="grid min-w-[340px] grid-cols-[1.5fr_72px_1fr] border-b border-[#b0b4ba] bg-[#d8dce2] text-[11px] font-semibold text-[#3a4050]">
+            <div className="flex items-center gap-1 px-2 py-2">
+              Inspection Status
+              <span className="text-[#6b7280]">▾</span>
+            </div>
+            <div className="px-2 py-2">Tag#</div>
+            <div className="px-2 py-2">Labels</div>
           </div>
 
-          {sorted.map((car) => {
-            const isNeeds =
-              car.status === "NEEDS WASH" || car.status === "PRIORITY WASH";
-            const isProgress = car.status === "Wash In Progress";
-            const isComplete = car.status === "WASH COMPLETE";
+          {sorted.map((car) => (
+            <div
+              key={car.id}
+              className={`grid min-w-[340px] grid-cols-[1.5fr_72px_1fr] items-center border-b border-[#c8ccd2] ${rowBg(
+                car.status
+              )} ${selectedId === car.id ? "outline outline-2 outline-blue-500 outline-offset-[-2px]" : ""}`}
+            >
+              <div className="px-1.5 py-1.5">
+                <select
+                  value={car.status}
+                  onChange={(e) =>
+                    updateStatus(car.id, e.target.value as WashStatus)
+                  }
+                  className={`w-full rounded px-2 py-1.5 text-[12px] font-semibold appearance-none cursor-pointer ${statusFieldClass(
+                    car.status
+                  )}`}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M2 3.5L5 7l3-3.5'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 8px center",
+                    paddingRight: "22px",
+                  }}
+                >
+                  <option value="PRIORITY WASH">PRIORITY WASH</option>
+                  <option value="NEEDS WASH">NEEDS WASH</option>
+                  <option value="Wash In Progress">Wash In Progress</option>
+                  <option value="WASH COMPLETE">WASH COMPLETE</option>
+                </select>
+              </div>
 
-            return (
-              <div
-                key={car.id}
-                className={`grid grid-cols-[minmax(0,1.4fr)_64px_minmax(0,1fr)] items-center gap-1 border-b border-[#e4e6ea] px-2 py-1.5 last:border-b-0 ${
-                  selectedId === car.id ? "ring-2 ring-inset ring-blue-400" : ""
-                } ${
-                  isNeeds
-                    ? "bg-[#fce8e8]"
-                    : isProgress
-                    ? "bg-[#fef6d9]"
-                    : isComplete
-                    ? "bg-[#f5f5f5]"
-                    : "bg-white"
-                }`}
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedId(selectedId === car.id ? null : car.id)
+                }
+                className="px-2 py-1.5 text-left font-mono text-[13px] font-bold text-[#1a1a1a]"
               >
-                <div className="min-w-0">
-                  <select
-                    value={car.status}
-                    onChange={(e) =>
-                      updateStatus(car.id, e.target.value as WashStatus)
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                    className={`w-full max-w-full truncate rounded border-0 px-2 py-1.5 text-[11px] font-bold uppercase appearance-none cursor-pointer ${rowStyle(
-                      car.status
-                    )}`}
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' fill-opacity='0.4' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 6px center",
-                      paddingRight: "20px",
-                    }}
-                  >
-                    <option value="PRIORITY WASH">PRIORITY WASH</option>
-                    <option value="NEEDS WASH">NEEDS WASH</option>
-                    <option value="Wash In Progress">Wash In Progress</option>
-                    <option value="WASH COMPLETE">WASH COMPLETE</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedId(selectedId === car.id ? null : car.id)
-                    }
-                    className="mt-0.5 block w-full truncate text-left text-[11px] text-[#5a6270] hover:text-[#1a1a1a]"
-                  >
-                    {car.year} {car.model}
-                  </button>
-                </div>
+                {car.tag}
+              </button>
 
+              <div className="flex flex-wrap items-center gap-1 px-1.5 py-1.5">
+                {car.labels.map((l) => (
+                  <span
+                    key={l}
+                    className="rounded bg-[#c0392b] px-1.5 py-0.5 text-[10px] font-semibold text-white whitespace-nowrap"
+                  >
+                    {l}
+                  </span>
+                ))}
                 <button
                   type="button"
                   onClick={() =>
                     setSelectedId(selectedId === car.id ? null : car.id)
                   }
-                  className="font-mono text-[13px] font-bold text-[#1a1a1a] text-left"
+                  className="flex h-5 w-5 items-center justify-center rounded border border-[#999] bg-white/80 text-[12px] text-[#555] hover:bg-white"
                 >
-                  {car.tag}
+                  +
                 </button>
-
-                <div className="flex flex-wrap items-center gap-1">
-                  {car.labels.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedId(selectedId === car.id ? null : car.id)
-                      }
-                      className="flex h-6 w-6 items-center justify-center rounded border border-[#c8ccd2] text-sm text-[#9ca3af] hover:bg-white"
-                    >
-                      +
-                    </button>
-                  ) : (
-                    <>
-                      {car.labels.map((l) => (
-                        <span
-                          key={l}
-                          className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-white"
-                        >
-                          {l}
-                        </span>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedId(selectedId === car.id ? null : car.id)
-                        }
-                        className="flex h-5 w-5 items-center justify-center rounded border border-[#c8ccd2] text-xs text-[#9ca3af] hover:bg-white"
-                      >
-                        +
-                      </button>
-                    </>
-                  )}
-                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 border-t border-[#c8ccd2] bg-white px-4 py-2 text-center text-[11px] text-[#6b7280]">
-        Jaguar Land Rover Carlsbad · Wash Queue
+      <footer className="fixed bottom-0 inset-x-0 border-t border-[#c0c4ca] bg-[#eef1f5] px-3 py-1.5 text-center text-[10px] text-[#6b7280]">
+        Jaguar Land Rover Carlsbad · Inspect
       </footer>
     </div>
   );
