@@ -1,7 +1,7 @@
 "use client";
 
 import { Car } from "@/lib/mock-data";
-import { PriorityBadge } from "./PriorityBadge";
+import { StatusBadge } from "./StatusBadge";
 
 interface NotificationBannerProps {
   car: Car;
@@ -16,18 +16,18 @@ export function NotificationBanner({
 }: NotificationBannerProps) {
   return (
     <div className="fixed inset-x-0 top-0 z-50 animate-in slide-in-from-top duration-300">
-      <div className="mx-auto max-w-lg border-b border-accent/50 bg-zinc-900/95 px-4 py-4 shadow-2xl backdrop-blur-lg">
+      <div className="mx-auto max-w-lg border-b border-red-500/60 bg-zinc-900/95 px-4 py-4 shadow-2xl backdrop-blur-lg">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-lg">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600 text-lg">
             🔔
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold">New car ready</p>
-              <PriorityBadge priority={car.priority} />
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold">New Priority Wash</p>
+              <StatusBadge status={car.status} />
             </div>
             <p className="mt-0.5 text-sm text-muted">
-              {car.year} {car.model} · {car.location}
+              {car.tag} · {car.year} {car.model} · {car.location}
             </p>
           </div>
         </div>
@@ -35,7 +35,7 @@ export function NotificationBanner({
           <button
             type="button"
             onClick={onAccept}
-            className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-black"
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white"
           >
             Accept
           </button>

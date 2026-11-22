@@ -1,7 +1,8 @@
 "use client";
 
-import { Car } from "@/lib/mock-data";
-import { PriorityBadge } from "./PriorityBadge";
+import { Car, rowAccent } from "@/lib/mock-data";
+import { StatusBadge } from "./StatusBadge";
+import { LabelChips } from "./LabelChips";
 
 interface ActiveTaskProps {
   car: Car | null;
@@ -30,93 +31,123 @@ export function ActiveTask({
 }: ActiveTaskProps) {
   if (!car) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-card/50 p-8 text-center">
+      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800 text-3xl">
           🚗
         </div>
-        <h2 className="text-xl font-semibold">Waiting for next car</h2>
-        <p className="mt-2 text-muted">
-          You’ll get a live notification when a vehicle is ready for detailing.
+        <h2 className="text-xl font-semibold">No active wash</h2>
+        <p className="mt-2 text-muted text-sm">
+          Select a car from the queue or wait for a Priority Wash notification.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-accent/40 bg-gradient-to-b from-accent/10 to-card p-5 shadow-lg shadow-accent/5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-widest text-accent">
-          {isWorking ? "In Progress" : "Next Car"}
+    <div
+      className={`rounded-2xl border border-border p-5 shadow-lg ${rowAccent(
+        car.status
+      )}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <StatusBadge status={car.status} />
+        <span className="font-mono text-lg font-bold tracking-wider">
+          {car.tag}
         </span>
-        <PriorityBadge priority={car.priority} />
       </div>
 
       <div className="mt-4 flex items-center gap-4">
         <div
-          className="h-16 w-16 shrink-0 rounded-2xl border-2 border-border shadow-lg"
+          className="h-14 w-14 shrink-0 rounded-xl border-2 border-border shadow-lg"
           style={{ backgroundColor: car.colorHex }}
         />
         <div>
-          <h2 className="text-2xl font-bold leading-tight">
+          <h2 className="text-xl font-bold leading-tight">
             {car.year} {car.model}
           </h2>
-          <p className="text-muted">
+          <p className="text-sm text-muted">
             {car.trim} · {car.color}
           </p>
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-xl bg-black/30 px-3 py-2">
-          <p className="text-muted text-xs">Location</p>
-          <p className="font-semibold text-lg">{car.location}</p>
+      {car.labels.length > 0 && (
+        <div className="mt-3">
+          <LabelChips labels={car.labels} />
         </div>
-        <div className="rounded-xl bg-black/30 px-3 py-2">
-          <p className="text-muted text-xs">Key Tag</p>
-          <p className="font-semibold text-lg">{car.keyTag ?? "—"}</p>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-2.5 text-sm">
+        <div className="rounded-xl bg-black/40 px-3 py-2.5">
+          <p className="text-[11px] text-muted uppercase tracking-wide">
+            Location
+          </p>
+          <p className="font-semibold text-base">{car.location}</p>
         </div>
-        <div className="rounded-xl bg-black/30 px-3 py-2">
-          <p className="text-muted text-xs">Stock #</p>
-          <p className="font-semibold">{car.stockNumber}</p>
+        <div className="rounded-xl bg-black/40 px-3 py-2.5">
+          <p className="text-[11px] text-muted uppercase tracking-wide">
+            Key Tag
+          </p>
+          <p className="font-semibold text-base">{car.keyTag ?? "—"}</p>
         </div>
-        <div className="rounded-xl bg-black/30 px-3 py-2">
-          <p className="text-muted text-xs">
+        <div className="rounded-xl bg-black/40 px-3 py-2.5">
+          <p className="text-[11px] text-muted uppercase tracking-wide">
             {isWorking ? "Elapsed" : "In Queue"}
           </p>
-          <p className="font-semibold font-mono text-lg">
+          <p className="font-semibold font-mono text-base">
             {isWorking ? formatTime(elapsed) : car.timeInQueue}
+          </p>
+        </div>
+        <div className="rounded-xl bg-black/40 px-3 py-2.5">
+          <p className="text-[11px] text-muted uppercase tracking-wide">
+            Assigned
+          </p>
+          <p className="font-semibold text-base">
+            {car.assignedTo ?? "—"}
           </p>
         </div>
       </div>
 
       {car.notes && (
-        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-100">
+        <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-100">
           {car.notes}
         </div>
       )}
 
       {car.deliveryTime && (
-        <p className="mt-3 text-center text-sm font-medium text-accent">
+        <p className="mt-2.5 text-center text-sm font-medium text-accent">
           Delivery target: {car.deliveryTime}
         </p>
       )}
 
-      <div className="mt-6 flex flex-col gap-3">
-        {!isWorking ? (
-          <button type="button" onClick={onStart} className="btn-primary w-full">
-            Start Detailing
-          </button>
-        ) : (
+      <div className="mt-5 flex flex-col gap-2.5">
+        {!isWorking &&
+          (car.status === "NEEDS WASH" || car.status === "PRIORITY WASH") && (
+            <button
+              type="button"
+              onClick={onStart}
+              className="btn-primary w-full"
+            >
+              Start Wash
+            </button>
+          )}
+
+        {isWorking && (
           <button
             type="button"
             onClick={onComplete}
-            className="btn-primary w-full bg-emerald-500"
+            className="btn-primary w-full !bg-emerald-500"
           >
-            Mark Complete
+            Mark Wash Complete
           </button>
         )}
-        <button type="button" onClick={onCantFind} className="btn-danger w-full">
-          Can&apos;t Find Car / Issue
+
+        <button
+          type="button"
+          onClick={onCantFind}
+          className="btn-danger w-full"
+        >
+          Can&apos;t Find / Report Issue
         </button>
       </div>
     </div>
