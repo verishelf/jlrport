@@ -36,13 +36,10 @@ export const initialCars: Car[] = [
     color: "Santorini Black",
     colorHex: "#1a1a1a",
     location: "Lot C-12",
-    status: "PRIORITY WASH",
-    labels: ["Has Loaner"],
-    notes: "Customer delivery 3:30 PM — full interior + ceramic",
-    assignedTo: PORTER_NAME,
+    status: "NEEDS WASH",
+    labels: [],
     timeInQueue: "4 min",
     keyTag: "K-184",
-    deliveryTime: "3:30 PM",
   },
   {
     id: "2",
@@ -56,7 +53,6 @@ export const initialCars: Car[] = [
     location: "Service Lane 2",
     status: "NEEDS WASH",
     labels: ["Has Loaner"],
-    notes: "Post-service wash only",
     timeInQueue: "18 min",
     keyTag: "K-092",
   },
@@ -72,10 +68,8 @@ export const initialCars: Car[] = [
     location: "Bay 3",
     status: "NEEDS WASH",
     labels: [],
-    notes: "New delivery — full detail required",
     timeInQueue: "7 min",
     keyTag: "K-201",
-    deliveryTime: "Tomorrow 10 AM",
   },
   {
     id: "4",
@@ -104,7 +98,6 @@ export const initialCars: Car[] = [
     location: "EV Bay 1",
     status: "NEEDS WASH",
     labels: ["Has Loaner", "QUICK LUBE / S"],
-    notes: "Quick exterior wipe + charge check",
     timeInQueue: "45 min",
     keyTag: "K-118",
   },
@@ -154,19 +147,19 @@ export const initialCars: Car[] = [
     timeInQueue: "—",
     keyTag: "K-155",
   },
+  {
+    id: "9",
+    tag: "TR335",
+    year: 2025,
+    make: "Land Rover",
+    model: "Discovery Sport",
+    trim: "S",
+    color: "Firenze Red",
+    colorHex: "#8b1a1a",
+    location: "Pickup Lot",
+    status: "WASH COMPLETE",
+    labels: ["Has Loaner"],
+    timeInQueue: "—",
+    keyTag: "K-142",
+  },
 ];
-
-export function rowStyle(status: WashStatus): string {
-  switch (status) {
-    case "PRIORITY WASH":
-      return "bg-red-600/90 text-white";
-    case "NEEDS WASH":
-      return "bg-red-500/80 text-white";
-    case "Wash In Progress":
-      return "bg-amber-400/90 text-black";
-    case "WASH COMPLETE":
-      return "bg-zinc-200/90 text-zinc-800";
-    default:
-      return "bg-zinc-700 text-white";
-  }
-}
