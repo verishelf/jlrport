@@ -13,13 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JLR Porter | Carlsbad",
-  description:
-    "Live detailing queue for Hoehn Jaguar Land Rover Carlsbad porters",
+  title: "JLR Carlsbad | Wash Queue",
+  description: "Wash & detail queue for Jaguar Land Rover Carlsbad porters",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "JLR Porter",
+    statusBarStyle: "default",
+    title: "JLR Wash",
   },
 };
 
@@ -27,7 +26,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0c0c0c",
+  themeColor: "#f4f5f7",
 };
 
 export default function RootLayout({
