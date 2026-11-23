@@ -1,318 +1,67 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Car, initialCars, PORTER_NAME, WashStatus } from "@/lib/mock-data";
 
-const STATUS_ORDER: WashStatus[] = [
-  "PRIORITY WASH",
-  "NEEDS WASH",
-  "Wash In Progress",
-  "WASH COMPLETE",
+const STATUS_OPTIONS: Array<{ value: WashStatus; label: string }> = [
+  { value: "NEEDS WASH", label: "Needs wash" },
+  { value: "Wash In Progress", label: "Wash in progress" },
+  { value: "WASH COMPLETE", label: "Wash complete" },
 ];
-
-function statusFieldClass(status: WashStatus): string {
-  switch (status) {
-    case "PRIORITY WASH":
-    case "NEEDS WASH":
-      return "bg-white text-[#1a1a1a] border border-[#ccc]";
-    case "Wash In Progress":
-      return "bg-white text-[#1a1a1a] border border-[#ccc]";
-    case "WASH COMPLETE":
-      return "bg-white text-[#1a1a1a] border border-[#ccc]";
-    default:
-      return "bg-white text-[#1a1a1a] border border-[#ccc]";
-  }
+const statusMeta: Record<WashStatus, { label: string; tone: string; dot: string }> = {
+  "NEEDS WASH": { label: "Needs wash", tone: "status-red", dot: "dot-red" },
+  "Wash In Progress": { label: "Wash in progress", tone: "status-amber", dot: "dot-amber" },
+  "WASH COMPLETE": { label: "Wash complete", tone: "status-gray", dot: "dot-gray" },
+  "PRIORITY WASH": { label: "Priority wash", tone: "status-red", dot: "dot-red" },
+};
+function Icon({ name }: { name: "search" | "plus" | "close" | "car" | "pin" | "tag" | "check" | "edit" }) {
+  const paths = {
+    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+    close: <><path d="m6 6 12 12M18 6 6 18" /></>,
+    car: <><path d="m5 17 1.3-5.2a2 2 0 0 1 1.9-1.5h7.6a2 2 0 0 1 1.9 1.5L19 17" /><path d="M4 17h16v2H4zM7 19v1M17 19v1" /><circle cx="7.5" cy="16" r=".8" /><circle cx="16.5" cy="16" r=".8" /></>,
+    pin: <><path d="M19 10c0 5-7 10-7 10S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2" /></>,
+    tag: <><path d="M4 5v6l9 9 6-6-9-9H4Z" /><circle cx="8" cy="9" r="1" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    edit: <><path d="m4 20 4.2-1 9.9-9.9a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z" /><path d="m13.5 7.5 3 3" /></>,
+  } as const;
+  return <svg aria-hidden="true" className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
-
-function rowBg(status: WashStatus): string {
-  switch (status) {
-    case "PRIORITY WASH":
-    case "NEEDS WASH":
-      return "bg-[#e85a5a]";
-    case "Wash In Progress":
-      return "bg-[#f0d060]";
-    case "WASH COMPLETE":
-      return "bg-[#e8e8e8]";
-    default:
-      return "bg-white";
-  }
-}
+function StatusPill({ status }: { status: WashStatus }) { const meta = statusMeta[status]; return <span className={`status-pill ${meta.tone}`}><span className={`status-dot ${meta.dot}`} />{meta.label}</span>; }
 
 export default function WashQueue() {
   const [cars, setCars] = useState<Car[]>(initialCars);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<WashStatus | "ALL">("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastCar, setToastCar] = useState<Car | null>(null);
-
-  const sorted = useMemo(() => {
-    return [...cars].sort(
-      (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
-    );
-  }, [cars]);
-
-  const selected = cars.find((c) => c.id === selectedId) ?? null;
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const newCar: Car = {
-        id: "new-1",
-        tag: "TG401",
-        year: 2026,
-        make: "Land Rover",
-        model: "Range Rover Sport",
-        trim: "Dynamic SE",
-        color: "Santorini Black",
-        colorHex: "#1a1a1a",
-        location: "Front Line 1",
-        status: "PRIORITY WASH",
-        labels: ["Has Loaner"],
-        notes: "Walk-in — priority detail",
-        timeInQueue: "0 min",
-        keyTag: "K-300",
-        deliveryTime: "ASAP",
-      };
-      setCars((prev) => [newCar, ...prev]);
-      setToastCar(newCar);
-      setShowToast(true);
-    }, 12000);
-    return () => clearTimeout(t);
-  }, []);
-
-  const updateStatus = useCallback((id: string, status: WashStatus) => {
-    setCars((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const next = { ...c, status };
-        if (status === "Wash In Progress") next.assignedTo = PORTER_NAME;
-        if (status === "WASH COMPLETE") next.timeInQueue = "—";
-        return next;
-      })
-    );
-  }, []);
-
-  return (
-    <div className="flex min-h-full flex-col bg-[#dfe3e8]">
-      <header className="bg-[#2c3e50] text-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">Jaguar Land Rover Carlsbad</span>
-            <span className="text-[10px] text-white/60">▾</span>
-          </div>
-          <span className="text-[11px] text-white/70">{PORTER_NAME}</span>
-        </div>
-      </header>
-
-      <div className="border-b border-[#c0c4ca] bg-[#eef1f5]">
-        <div className="mx-auto flex max-w-3xl gap-0 overflow-x-auto px-1">
-          {["Messages", "Appointments", "Payments", "Inspect", "Video"].map(
-            (tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={`shrink-0 px-3 py-2.5 text-[13px] font-medium ${
-                  tab === "Inspect"
-                    ? "border-b-2 border-[#0d6efd] text-[#0d6efd]"
-                    : "text-[#5a6270]"
-                }`}
-              >
-                {tab}
-              </button>
-            )
-          )}
-        </div>
-      </div>
-
-      <div className="border-b border-[#c0c4ca] bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-[#1a1a1a]">
-              Joint Inspection
-            </span>
-            <span className="rounded bg-[#0d6efd] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              Live
-            </span>
-          </div>
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded bg-[#2c3e50] px-3 py-1.5 text-[12px] font-semibold text-white"
-          >
-            <span className="text-base leading-none">+</span> CREATE
-          </button>
-        </div>
-        <div className="mx-auto max-w-3xl px-3 pb-2">
-          <input
-            type="search"
-            placeholder="Search by RO#, VIN, TAG, Customer Name, Stock#"
-            className="w-full rounded border border-[#c0c4ca] bg-white px-3 py-1.5 text-[13px] text-[#1a1a1a] placeholder:text-[#9ca3af] outline-none focus:border-[#0d6efd]"
-          />
-        </div>
-      </div>
-
-      {showToast && toastCar && (
-        <div className="fixed inset-x-0 top-28 z-50 mx-auto max-w-3xl px-3">
-          <div className="flex items-center justify-between gap-3 rounded border border-red-400 bg-white p-3 shadow-lg">
-            <div>
-              <p className="text-sm font-semibold text-red-600">
-                New Priority Wash
-              </p>
-              <p className="text-xs text-[#6b7280]">
-                {toastCar.tag} · {toastCar.year} {toastCar.model}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedId(toastCar.id);
-                  setShowToast(false);
-                }}
-                className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Accept
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowToast(false)}
-                className="rounded border border-[#c0c4ca] px-3 py-1.5 text-xs font-medium text-[#6b7280]"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="mx-auto w-full max-w-3xl flex-1 pb-16">
-        {selected && (
-          <div className="m-3 rounded border border-[#c0c4ca] bg-white p-3 shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-mono text-sm font-bold">{selected.tag}</p>
-                <p className="text-[15px] font-semibold">
-                  {selected.year} {selected.model} {selected.trim}
-                </p>
-                <p className="text-xs text-[#6b7280]">
-                  {selected.color} · {selected.location}
-                  {selected.keyTag ? ` · Key ${selected.keyTag}` : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedId(null)}
-                className="text-[#6b7280] text-lg leading-none px-1"
-              >
-                ×
-              </button>
-            </div>
-            {selected.notes && (
-              <p className="mt-2 text-xs text-[#6b7280]">{selected.notes}</p>
-            )}
-            <div className="mt-3 flex gap-2">
-              {(selected.status === "NEEDS WASH" ||
-                selected.status === "PRIORITY WASH") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateStatus(selected.id, "Wash In Progress");
-                  }}
-                  className="flex-1 rounded bg-[#0d6efd] py-2 text-sm font-semibold text-white"
-                >
-                  Start Wash
-                </button>
-              )}
-              {selected.status === "Wash In Progress" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateStatus(selected.id, "WASH COMPLETE");
-                    setSelectedId(null);
-                  }}
-                  className="flex-1 rounded bg-emerald-600 py-2 text-sm font-semibold text-white"
-                >
-                  Mark Complete
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="overflow-x-auto bg-white">
-          <div className="grid min-w-[340px] grid-cols-[1.5fr_72px_1fr] border-b border-[#b0b4ba] bg-[#d8dce2] text-[11px] font-semibold text-[#3a4050]">
-            <div className="flex items-center gap-1 px-2 py-2">
-              Inspection Status
-              <span className="text-[#6b7280]">▾</span>
-            </div>
-            <div className="px-2 py-2">Tag#</div>
-            <div className="px-2 py-2">Labels</div>
-          </div>
-
-          {sorted.map((car) => (
-            <div
-              key={car.id}
-              className={`grid min-w-[340px] grid-cols-[1.5fr_72px_1fr] items-center border-b border-[#c8ccd2] ${rowBg(
-                car.status
-              )} ${selectedId === car.id ? "outline outline-2 outline-blue-500 outline-offset-[-2px]" : ""}`}
-            >
-              <div className="px-1.5 py-1.5">
-                <select
-                  value={car.status}
-                  onChange={(e) =>
-                    updateStatus(car.id, e.target.value as WashStatus)
-                  }
-                  className={`w-full rounded px-2 py-1.5 text-[12px] font-semibold appearance-none cursor-pointer ${statusFieldClass(
-                    car.status
-                  )}`}
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M2 3.5L5 7l3-3.5'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 8px center",
-                    paddingRight: "22px",
-                  }}
-                >
-                  <option value="PRIORITY WASH">PRIORITY WASH</option>
-                  <option value="NEEDS WASH">NEEDS WASH</option>
-                  <option value="Wash In Progress">Wash In Progress</option>
-                  <option value="WASH COMPLETE">WASH COMPLETE</option>
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedId(selectedId === car.id ? null : car.id)
-                }
-                className="px-2 py-1.5 text-left font-mono text-[13px] font-bold text-[#1a1a1a]"
-              >
-                {car.tag}
-              </button>
-
-              <div className="flex flex-wrap items-center gap-1 px-1.5 py-1.5">
-                {car.labels.map((l) => (
-                  <span
-                    key={l}
-                    className="rounded bg-[#c0392b] px-1.5 py-0.5 text-[10px] font-semibold text-white whitespace-nowrap"
-                  >
-                    {l}
-                  </span>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedId(selectedId === car.id ? null : car.id)
-                  }
-                  className="flex h-5 w-5 items-center justify-center rounded border border-[#999] bg-white/80 text-[12px] text-[#555] hover:bg-white"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
-      <footer className="fixed bottom-0 inset-x-0 border-t border-[#c0c4ca] bg-[#eef1f5] px-3 py-1.5 text-center text-[10px] text-[#6b7280]">
-        Jaguar Land Rover Carlsbad · Inspect
-      </footer>
-    </div>
-  );
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [draftLabel, setDraftLabel] = useState("");
+  const [formError, setFormError] = useState("");
+  const counts = useMemo(() => ({ all: cars.length, needs: cars.filter((car) => car.status === "NEEDS WASH").length, progress: cars.filter((car) => car.status === "Wash In Progress").length, complete: cars.filter((car) => car.status === "WASH COMPLETE").length }), [cars]);
+  const visibleCars = useMemo(() => { const needle = query.trim().toLowerCase(); return cars.filter((car) => { const searchable = [car.tag, car.stockNumber, car.make, car.model, car.year, car.location, car.trim].join(" ").toLowerCase(); return (filter === "ALL" || car.status === filter) && (!needle || searchable.includes(needle)); }); }, [cars, filter, query]);
+  const selected = cars.find((car) => car.id === selectedId) ?? null;
+  function updateStatus(id: string, status: WashStatus) { setCars((current) => current.map((car) => car.id === id ? { ...car, status, assignedTo: status === "Wash In Progress" ? PORTER_NAME : car.assignedTo, timeInQueue: status === "WASH COMPLETE" ? "—" : car.timeInQueue } : car)); }
+  function addLabel() { const label = newLabel.trim(); if (!selected || !label) return; setCars((current) => current.map((car) => car.id === selected.id && !car.labels.includes(label) ? { ...car, labels: [...car.labels, label] } : car)); setNewLabel(""); }
+  function removeLabel(label: string) { if (!selected) return; setCars((current) => current.map((car) => car.id === selected.id ? { ...car, labels: car.labels.filter((item) => item !== label) } : car)); }
+  function saveLabel(label: string) { const next = draftLabel.trim(); if (!selected || !next) return; setCars((current) => current.map((car) => car.id === selected.id ? { ...car, labels: car.labels.map((item) => item === label ? next : item) } : car)); setEditingLabel(null); setDraftLabel(""); }
+  function createVehicle(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); const tag = String(form.get("tag") ?? "").trim(); const year = Number(form.get("year")); const make = String(form.get("make") ?? "").trim(); const model = String(form.get("model") ?? "").trim(); if (!tag || !year || !make || !model) { setFormError("Tag, year, make, and model are required."); return; } const vehicle: Car = { id: `vehicle-${Date.now()}`, tag, year, make, model, trim: String(form.get("trim") ?? "").trim(), stockNumber: String(form.get("stockNumber") ?? "").trim(), color: String(form.get("color") ?? "").trim() || "Not specified", colorHex: "#d4d7d2", location: String(form.get("location") ?? "").trim() || "Unassigned", status: "NEEDS WASH", labels: [], timeInQueue: "0 min" }; setCars((current) => [vehicle, ...current]); setSelectedId(vehicle.id); setIsCreateOpen(false); setFormError(""); }
+  return <main className="app-shell">
+    <header className="topbar"><div className="topbar-inner"><div className="brand-lockup"><div className="brand-mark">JLR</div><div><p className="brand-title">Porter Operations</p><p className="brand-subtitle">Jaguar Land Rover · Carlsbad</p></div></div><div className="operator"><span className="online-dot" /> <span>{PORTER_NAME}</span><span className="operator-role">Porter</span></div></div></header>
+    <section className="hero-band"><div className="content-width hero-content"><div><p className="eyebrow">Vehicle preparation</p><h1>Wash queue</h1><p className="hero-copy">Keep every vehicle moving through the service lane.</p></div><button type="button" className="primary-button" onClick={() => setIsCreateOpen(true)}><Icon name="plus" /> Add vehicle</button></div></section>
+    <div className="content-width"><section className="summary-grid" aria-label="Queue summary">
+      <button type="button" className={`summary-card ${filter === "ALL" ? "summary-active" : ""}`} onClick={() => setFilter("ALL")}><span className="summary-label">All vehicles</span><strong>{counts.all}</strong><span className="summary-note">In today&apos;s queue</span></button>
+      <button type="button" className={`summary-card summary-red ${filter === "NEEDS WASH" ? "summary-active" : ""}`} onClick={() => setFilter("NEEDS WASH")}><span className="summary-label"><span className="status-dot dot-red" /> Needs wash</span><strong>{counts.needs}</strong><span className="summary-note">Awaiting wash</span></button>
+      <button type="button" className={`summary-card summary-amber ${filter === "Wash In Progress" ? "summary-active" : ""}`} onClick={() => setFilter("Wash In Progress")}><span className="summary-label"><span className="status-dot dot-amber" /> In progress</span><strong>{counts.progress}</strong><span className="summary-note">Currently in bay</span></button>
+      <button type="button" className={`summary-card summary-gray ${filter === "WASH COMPLETE" ? "summary-active" : ""}`} onClick={() => setFilter("WASH COMPLETE")}><span className="summary-label"><span className="status-dot dot-gray" /> Complete</span><strong>{counts.complete}</strong><span className="summary-note">Ready for pickup</span></button>
+    </section>
+    <section className="queue-panel"><div className="panel-heading"><div><p className="eyebrow">Live inventory</p><h2>Vehicle queue <span>{visibleCars.length}</span></h2></div><span className="live-badge"><span className="online-dot" /> Live</span></div>
+      <div className="toolbar"><label className="search-box"><Icon name="search" /><input aria-label="Search vehicles" type="search" placeholder="Search tag, stock #, make, model, year, or location" value={query} onChange={(event) => setQuery(event.target.value)} /></label><label className="filter-select"><span>Show</span><select aria-label="Filter vehicles by status" value={filter} onChange={(event) => setFilter(event.target.value as WashStatus | "ALL")}><option value="ALL">All statuses</option>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div>
+      <div className="table-wrap"><table><thead><tr><th>Vehicle</th><th>Identifiers</th><th>Location</th><th>Status</th><th>Labels</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visibleCars.map((car) => <tr key={car.id} className={selectedId === car.id ? "selected-row" : ""} onClick={() => setSelectedId(car.id)}><td><div className="vehicle-cell"><span className="vehicle-icon"><Icon name="car" /></span><div><strong>{car.year} {car.make} {car.model}</strong><span>{car.trim || car.color}</span></div></div></td><td><div className="identifier-cell"><code>{car.tag}</code>{car.stockNumber && <span>Stock {car.stockNumber}</span>}</div></td><td><span className="location-cell"><Icon name="pin" />{car.location || "—"}</span></td><td onClick={(event) => event.stopPropagation()}><select className="inline-status" aria-label={`Status for ${car.tag}`} value={car.status} onChange={(event) => updateStatus(car.id, event.target.value as WashStatus)}><option value="NEEDS WASH">Needs wash</option><option value="Wash In Progress">Wash in progress</option><option value="WASH COMPLETE">Wash complete</option></select></td><td><div className="table-labels">{car.labels.slice(0, 2).map((label) => <span className="label-chip" key={label}>{label}</span>)}{car.labels.length > 2 && <span className="label-more">+{car.labels.length - 2}</span>}</div></td><td><button type="button" className="row-action" aria-label={`Edit ${car.tag}`} onClick={(event) => { event.stopPropagation(); setSelectedId(car.id); }}><Icon name="edit" /></button></td></tr>)}</tbody></table>{visibleCars.length === 0 && <div className="empty-state"><Icon name="search" /><h3>No vehicles found</h3><p>Try another search or clear the status filter.</p></div>}</div>
+    </section></div>
+    <footer className="footer"><span>JLR Porter Operations</span><span>Last updated just now</span></footer>
+    {selected && <aside className="drawer-backdrop" onClick={() => setSelectedId(null)}><section className="vehicle-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><p className="eyebrow">Vehicle detail</p><h2>{selected.tag}</h2></div><button type="button" className="icon-button" aria-label="Close vehicle detail" onClick={() => setSelectedId(null)}><Icon name="close" /></button></div><div className="drawer-vehicle"><span className="vehicle-icon large"><Icon name="car" /></span><div><h3>{selected.year} {selected.make} {selected.model}</h3><p>{selected.trim || selected.color}</p></div></div><div className="detail-grid"><div><span>Location</span><strong>{selected.location || "—"}</strong></div><div><span>Stock number</span><strong>{selected.stockNumber || "—"}</strong></div><div><span>Key tag</span><strong>{selected.keyTag || "—"}</strong></div><div><span>Queue time</span><strong>{selected.timeInQueue}</strong></div></div><div className="drawer-section"><div className="section-title"><span>Wash status</span><StatusPill status={selected.status} /></div><div className="status-actions">{STATUS_OPTIONS.map((option) => <button type="button" key={option.value} className={selected.status === option.value ? "active" : ""} onClick={() => updateStatus(selected.id, option.value)}><span className={`status-dot ${statusMeta[option.value].dot}`} />{option.label}</button>)}</div></div><div className="drawer-section"><div className="section-title"><span>Labels</span><span className="label-count">{selected.labels.length}</span></div><div className="drawer-labels">{selected.labels.map((label) => <div className="editable-label" key={label}>{editingLabel === label ? <input autoFocus value={draftLabel} onChange={(event) => setDraftLabel(event.target.value)} onKeyDown={(event) => event.key === "Enter" && saveLabel(label)} /> : <span><Icon name="tag" />{label}</span>}{editingLabel === label ? <button type="button" onClick={() => saveLabel(label)} aria-label="Save label"><Icon name="check" /></button> : <><button type="button" onClick={() => { setEditingLabel(label); setDraftLabel(label); }} aria-label={`Edit ${label}`}><Icon name="edit" /></button><button type="button" onClick={() => removeLabel(label)} aria-label={`Remove ${label}`}><Icon name="close" /></button></>}</div>)}<div className="add-label"><input value={newLabel} onChange={(event) => setNewLabel(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addLabel()} placeholder="Add a label" /><button type="button" onClick={addLabel} aria-label="Add label"><Icon name="plus" /></button></div></div></div></section></aside>}
+    {isCreateOpen && <div className="modal-backdrop" onClick={() => setIsCreateOpen(false)}><section className="create-modal" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><p className="eyebrow">Queue intake</p><h2>Add vehicle</h2></div><button type="button" className="icon-button" aria-label="Close add vehicle form" onClick={() => setIsCreateOpen(false)}><Icon name="close" /></button></div><p className="modal-copy">Add a vehicle to the wash queue. Required fields are marked with an asterisk.</p><form onSubmit={createVehicle}><div className="form-grid"><label>Tag number *<input name="tag" placeholder="TG401" required /></label><label>Year *<input name="year" type="number" min="2000" max="2100" placeholder="2026" required /></label><label>Make *<input name="make" placeholder="Land Rover" required /></label><label>Model *<input name="model" placeholder="Defender 110" required /></label><label>Trim<input name="trim" placeholder="X-Dynamic HSE" /></label><label>Stock number<input name="stockNumber" placeholder="JLR-1042" /></label><label>Location<input name="location" placeholder="Lot B-12" /></label><label>Color<input name="color" placeholder="Fuji White" /></label></div>{formError && <p className="form-error">{formError}</p>}<button className="primary-button form-submit" type="submit"><Icon name="plus" /> Add to queue</button></form></section></div>}
+  </main>;
 }

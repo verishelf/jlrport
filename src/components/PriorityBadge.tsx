@@ -6,12 +6,12 @@ const styles: Record<Priority, string> = {
   low: "bg-zinc-500/20 text-zinc-400 border-zinc-500/40",
 };
 
-export function PriorityBadge({ priority }: { priority: Priority }) {
+export function PriorityBadge({ priority }: { priority?: Priority }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${styles[priority]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${styles[priority ?? "normal"]}`}
     >
-      {priority}
+      {priority ?? "normal"}
     </span>
   );
 }
